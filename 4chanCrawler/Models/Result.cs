@@ -1,0 +1,23 @@
+namespace _4chanCrawler.Models;
+
+public class Result
+{
+	public required string BoardKey { get; set; }
+	
+	public required string BoardLabel { get; set; }
+	
+	public required string Keyword { get; set; }
+	
+	public required string Source { get; set; }
+	
+	public required string Url { get; set; }
+	
+	public long ThreadId { get; set; }
+	
+	public long? ReplyId { get; set; }
+
+	public override string ToString()
+	{
+		return $"'{Keyword}' on Board '{BoardLabel}' ({BoardKey}) with Source '{Source}' -> {Url}";
+	}
+}
