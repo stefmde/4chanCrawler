@@ -1,6 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using _4chanCrawler.Helpers;
+﻿using _4chanCrawler.Helpers;
 using _4chanCrawler.Models;
 
 var configuration = ConfigurationHelper.Get();
@@ -23,7 +21,7 @@ while (true)
 	}
 	catch (Exception e)
 	{
-		Console.WriteLine($"Connection Error ({DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")}): {e}");
+		Console.WriteLine($"Connection Error ({DateTime.Now.ToString(Constants.DateTimeFormat)}): {e}");
 		Thread.Sleep( configuration.TimeoutBetweenLoopsMinutes * 1000 * 60);
 		continue;
 	}

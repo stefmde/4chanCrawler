@@ -7,18 +7,20 @@ namespace _4chanCrawler.Helpers;
 
 public static class CheckHelper
 {
+	private static Guid RunId { get; } = Guid.NewGuid();
+	
 	public static async Task<List<Result>> CheckBoards(CrawlerConfiguration configuration)
 	{
-		// Console.WriteLine("Querying...");
 		var results = new List<Result>();
-		
-		var progressBar = new ProgressBar("Querying...", "Boards", 0, 3);
+		// var progressBar = new ProgressBar("Querying...", "Boards", 0, 3);
 		for (var boardIndex = 0; boardIndex < configuration.Boards.Count; boardIndex++)
 		{
+			Console.WriteLine();
+			Console.Write($"Board {boardIndex + 1} / {configuration.Boards.Count}  ");
+			TimeHelper.CalculateTime(configuration, boardIndex);
 			var board = await GetBoard(configuration.Boards[boardIndex].Key);
 			var boardResults = await CheckBoardPages(board, configuration.Boards[boardIndex], configuration.Keywords, configuration.TimeoutBetweenRequestsMilliSeconds);
 			results.AddRange(boardResults);
-			progressBar.Report((double)boardIndex / (double)configuration.Boards.Count);
 			
 			Thread.Sleep(configuration.TimeoutBetweenRequestsMilliSeconds);
 		}
@@ -50,15 +52,16 @@ public static class CheckHelper
 	{
 		var results = new List<Result>();
 		var pageIndex = 1;
-		var progressBar = new ProgressBar("Querying...", "Pages", 2, 3);
+		// var progressBar = new ProgressBar("Querying...", "Pages", 2, 3);
 		foreach (var boardPage in board.Pages)
 		{
+			Console.WriteLine($"\tPage {pageIndex} / {board.Pages.Count}");
 			var threadResults = CheckThreads(boardConfiguration, boardPage.Threads, keywords, timeoutBetweenRequestsMilliSeconds);
 			results.AddRange(await threadResults);
 			pageIndex++;
-			progressBar.Report((double)pageIndex / (double)board.Pages.Count);
+			// progressBar.Report((double)pageIndex / (double)board.Pages.Count);
 		}
-		progressBar.Dispose();
+		// progressBar.Dispose();
 		
 		return results;
 	}
@@ -67,7 +70,7 @@ public static class CheckHelper
 	{
 		var results = new List<Result>();
 		var threadIndex = 1;
-		var progressBar = new ProgressBar("Querying...", "Threads", 2, 3);
+		// var progressBar = new ProgressBar("Querying...", "Threads", 2, 3);
 		foreach (var thread in threads)
 		{
 			var threadTitleFoundKey = CheckStringForKeywords(thread.Title, keywords);
@@ -75,6 +78,7 @@ public static class CheckHelper
 			{
 				var result = new Result
 				{
+					RunId = RunId,
 					BoardKey = boardConfiguration.Key,
 					BoardLabel = boardConfiguration.Label,
 					Keyword = threadTitleFoundKey,
@@ -90,6 +94,7 @@ public static class CheckHelper
 			{
 				var result = new Result
 				{
+					RunId = RunId,
 					BoardKey = boardConfiguration.Key,
 					BoardLabel = boardConfiguration.Label,
 					Keyword = threadTextFoundKey,
@@ -102,10 +107,10 @@ public static class CheckHelper
 			
 			var repliesResults = await CheckReplies(boardConfiguration, thread.Id, keywords, timeoutBetweenRequestsMilliSeconds);
 			results.AddRange(repliesResults);
-			progressBar.Report((double)threadIndex / (double)threads.Count);
+			// progressBar.Report((double)threadIndex / (double)threads.Count);
 			threadIndex++;
 		}
-		progressBar.Dispose();
+		// progressBar.Dispose();
 		return results;
 	}
 
@@ -130,6 +135,7 @@ public static class CheckHelper
 			{
 				var result = new Result
 				{
+					RunId = RunId,
 					BoardKey = boardConfiguration.Key,
 					BoardLabel = boardConfiguration.Label,
 					Keyword = lastReplyTextFoundKey,
@@ -148,6 +154,7 @@ public static class CheckHelper
 				{
 					var result = new Result
 					{
+						RunId = RunId,
 						BoardKey = boardConfiguration.Key,
 						BoardLabel = boardConfiguration.Label,
 						Keyword = lastReplyFileNameFoundKey,

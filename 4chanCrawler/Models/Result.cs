@@ -2,6 +2,8 @@ namespace _4chanCrawler.Models;
 
 public class Result
 {
+	public required Guid RunId { get; set; }
+	
 	public required string BoardKey { get; set; }
 	
 	public required string BoardLabel { get; set; }
@@ -11,6 +13,10 @@ public class Result
 	public required string Source { get; set; }
 	
 	public required string Url { get; set; }
+	
+	public DateTime Created { get; set; } = DateTime.Now;
+	
+	public bool Available { get; set; } = true;
 	
 	public long ThreadId { get; set; }
 	
