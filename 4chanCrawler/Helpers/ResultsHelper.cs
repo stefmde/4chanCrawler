@@ -1,24 +1,61 @@
 using _4chanCrawler.Models;
+using Newtonsoft.Json;
 
 namespace _4chanCrawler.Helpers;
 
-public class ResultsHelper
+public static class ResultsHelper
 {
-	public List<Result> Results { get; } = new List<Result>();
+	private const string ResultsFileName = "results.json";
+	public static List<Result> Results { get; private set; } = new();
 
-	public void AddResult(Result result)
+	public static void Add(Result result)
 	{
+		if (Results.Any(x => x.BoardKey == result.BoardKey && x.ReplyId == result.ReplyId && x.ThreadId == result.ThreadId && x.Keyword == result.Keyword && x.Source == result.Source))
+		{
+			return;
+		}
 		Results.Add(result);
 		WriteToFile();
 	}
 
-	private void WriteToFile()
+	private static void WriteToFile()
 	{
-		
+		var json = JsonConvert.SerializeObject(Results, Formatting.Indented);
+		File.WriteAllText(ResultsFileName, json);
 	}
 
-	public async Task Check()
+	public static async Task ReadFromFile()
 	{
-		
+		if (!File.Exists(ResultsFileName))
+		{
+			return;
+		}
+		var json = await File.ReadAllTextAsync(ResultsFileName);
+		if (string.IsNullOrWhiteSpace(json))
+		{
+			return;
+		}
+		Results = JsonConvert.DeserializeObject<List<Result>>(json)!;
+		await Check();
+	}
+
+	private static async Task Check()
+	{
+		foreach (var result in Results)
+		{
+			try
+			{
+				var client = new HttpClient();
+				var requestResult = await client.GetAsync(result.Url);
+
+				result.IsAvailable = requestResult.IsSuccessStatusCode;
+			}
+			catch (Exception)
+			{
+				result.IsAvailable = false;
+			}
+		}
+
+		WriteToFile();
 	}
 }

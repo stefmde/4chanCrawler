@@ -9,9 +9,9 @@ public class TimeHelper
 	
 	public static TimeSpan CalculateTime(CrawlerConfiguration configuration, int currentBoardIndex = -1)
 	{
-		var seconds = ((double)configuration.Boards.Count - (double)currentBoardIndex) * PagesPerBoard * ThreadsPerBoard * (double)((double)configuration.TimeoutBetweenRequestsMilliSeconds / (double)1000);
+		var seconds = ((double)configuration.Boards.Count - (double)currentBoardIndex) * PagesPerBoard * ThreadsPerBoard * (double)((double)(configuration.TimeoutBetweenRequestsMilliSeconds + 470) / (double)1000);
 		var ts = TimeSpan.FromSeconds(seconds);
-		Console.WriteLine($"ETA (HH:MM:SS): {ts} which will be at {DateTime.Now.Add(ts).ToString(Constants.DateTimeFormat)}");
+		Console.WriteLine($"ETA (HH:MM:SS): {ts.ToString(Constants.TimeSpanFormat)} which will be at {DateTime.Now.Add(ts).ToString(Constants.DateTimeFormat)}");
 		
 		return ts;
 	}

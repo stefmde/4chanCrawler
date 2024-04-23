@@ -4,18 +4,29 @@ namespace _4chanCrawler.Helpers;
 
 public static class PrintHelper
 {
-	public static void PrintResults(List<Result> results, DateTime roundtripStart)
+	public static void PrintCompleteResults(List<Result> results, DateTime roundtripStart)
 	{
-		Console.WriteLine();
-		var dateAndTime = $"({DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} | HH:MM:SS {DateTime.UtcNow - roundtripStart})";
-		
+		var dateAndTime = $"({DateTime.Now.ToString(Constants.DateTimeFormat)} | HH:MM:SS {DateTime.UtcNow - roundtripStart})";
+
+		PrintResults(results, dateAndTime, true);
+	}
+	
+	public static void PrintResults(List<Result> results, string dateAndTime, bool isNew)
+	{
 		if (results is null || !results.Any())
 		{
-			Console.WriteLine($"Nothing (new) found {dateAndTime}");
+			if (isNew)
+			{
+				Console.WriteLine($"Nothing (new) found {dateAndTime}");
+			}
 			return;
 		}
-		
-		Console.WriteLine($"NEW RESULTS {dateAndTime}");
+
+		if (isNew)
+		{
+			Console.WriteLine($"NEW RESULTS {dateAndTime}");
+		}
+
 		foreach (var result in results)
 		{
 			Console.WriteLine(result);

@@ -9,37 +9,38 @@ public static class CheckHelper
 {
 	private static Guid RunId { get; } = Guid.NewGuid();
 	
-	public static async Task<List<Result>> CheckBoards(CrawlerConfiguration configuration)
+	public static async Task CheckBoards(CrawlerConfiguration configuration)
 	{
-		var results = new List<Result>();
-		// var progressBar = new ProgressBar("Querying...", "Boards", 0, 3);
 		for (var boardIndex = 0; boardIndex < configuration.Boards.Count; boardIndex++)
 		{
-			Console.WriteLine();
 			Console.Write($"Board {boardIndex + 1} / {configuration.Boards.Count}  ");
 			TimeHelper.CalculateTime(configuration, boardIndex);
-			var board = await GetBoard(configuration.Boards[boardIndex].Key);
-			var boardResults = await CheckBoardPages(board, configuration.Boards[boardIndex], configuration.Keywords, configuration.TimeoutBetweenRequestsMilliSeconds);
-			results.AddRange(boardResults);
-			
+			var boardKey = configuration.Boards[boardIndex].Key;
+			var board = await GetBoard(boardKey);
+			if (board is null)
+			{
+				continue;
+			}
+			await CheckBoardPages(board, configuration.Boards[boardIndex], configuration.Keywords, configuration.TimeoutBetweenRequestsMilliSeconds);
 			Thread.Sleep(configuration.TimeoutBetweenRequestsMilliSeconds);
+			var foundCount = ResultsHelper.Results.Count(x => x.RunId == RunId && x.BoardKey == boardKey);
+			if (foundCount > 0)
+			{
+				Console.WriteLine($"\t{foundCount} Found");
+			}
+			Console.WriteLine();
 		}
-
-		return results;
 	}
 
-	private static async Task<Board> GetBoard(string board)
+	private static async Task<Board?> GetBoard(string board)
 	{
 		var url = $"https://a.4cdn.org/{board}/catalog.json";
-		var client = new HttpClient();
-		var clientResult = await client.GetAsync(url);
-		if (!clientResult.IsSuccessStatusCode)
+		var resultJson = await HttpClientHelper.GetJson(url);
+		if (string.IsNullOrWhiteSpace(resultJson))
 		{
-			throw new Exception($"Can't get board data for {board}");
+			return null;
 		}
-
-		var resultData = await clientResult.Content.ReadAsStringAsync();
-		var pages = JsonConvert.DeserializeObject<List<BoardPage>>(resultData);
+		var pages = JsonConvert.DeserializeObject<List<BoardPage>>(resultJson);
 		var result = new Board
 		{
 			BoardName = board,
@@ -48,29 +49,20 @@ public static class CheckHelper
 		return result;
 	}
 
-	private static async Task<List<Result>> CheckBoardPages(Board board, BoardConfiguration boardConfiguration, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
+	private static async Task CheckBoardPages(Board board, BoardConfiguration boardConfiguration, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
 	{
-		var results = new List<Result>();
 		var pageIndex = 1;
-		// var progressBar = new ProgressBar("Querying...", "Pages", 2, 3);
 		foreach (var boardPage in board.Pages)
 		{
 			Console.WriteLine($"\tPage {pageIndex} / {board.Pages.Count}");
-			var threadResults = CheckThreads(boardConfiguration, boardPage.Threads, keywords, timeoutBetweenRequestsMilliSeconds);
-			results.AddRange(await threadResults);
+			await CheckThreads(boardConfiguration, boardPage.Threads, keywords, timeoutBetweenRequestsMilliSeconds);
 			pageIndex++;
-			// progressBar.Report((double)pageIndex / (double)board.Pages.Count);
 		}
-		// progressBar.Dispose();
-		
-		return results;
 	}
 
-	private static async Task<List<Result>> CheckThreads(BoardConfiguration boardConfiguration, List<BoardThread> threads, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
+	private static async Task CheckThreads(BoardConfiguration boardConfiguration, List<BoardThread> threads, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
 	{
-		var results = new List<Result>();
 		var threadIndex = 1;
-		// var progressBar = new ProgressBar("Querying...", "Threads", 2, 3);
 		foreach (var thread in threads)
 		{
 			var threadTitleFoundKey = CheckStringForKeywords(thread.Title, keywords);
@@ -86,7 +78,7 @@ public static class CheckHelper
 					Source = "ThreadTitle",
 					Url = thread.GetThreadUrl(boardConfiguration.Key)
 				};
-				results.Add(result);
+				ResultsHelper.Add(result);
 			}
 
 			var threadTextFoundKey = CheckStringForKeywords(thread.Text, keywords);
@@ -102,31 +94,24 @@ public static class CheckHelper
 					Source = "ThreadText",
 					Url = thread.GetThreadUrl(boardConfiguration.Key)
 				};
-				results.Add(result);
+				ResultsHelper.Add(result);
 			}
 			
-			var repliesResults = await CheckReplies(boardConfiguration, thread.Id, keywords, timeoutBetweenRequestsMilliSeconds);
-			results.AddRange(repliesResults);
-			// progressBar.Report((double)threadIndex / (double)threads.Count);
+			await CheckReplies(boardConfiguration, thread.Id, keywords, timeoutBetweenRequestsMilliSeconds);
 			threadIndex++;
 		}
-		// progressBar.Dispose();
-		return results;
 	}
 
-	private static async Task<List<Result>> CheckReplies(BoardConfiguration boardConfiguration, long threadId, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
+	private static async Task CheckReplies(BoardConfiguration boardConfiguration, long threadId, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
 	{
 		Thread.Sleep(timeoutBetweenRequestsMilliSeconds);
-		var results = new List<Result>();
-		var client = new HttpClient();
-		var httpClientResult = await client.GetAsync($"https://a.4cdn.org/{boardConfiguration.Key}/thread/{threadId}.json");
-		
-		if (!httpClientResult.IsSuccessStatusCode)
+		var resultJson = await HttpClientHelper.GetJson($"https://a.4cdn.org/{boardConfiguration.Key}/thread/{threadId}.json");
+		if (string.IsNullOrWhiteSpace(resultJson))
 		{
-			throw new Exception($"Can't get replies for {boardConfiguration.Key}/{threadId} {httpClientResult.StatusCode} {httpClientResult.ReasonPhrase}");
+			return;
 		}
 
-		var post = JsonConvert.DeserializeObject<BoardThreadPost>(await httpClientResult.Content.ReadAsStringAsync());
+		var post = JsonConvert.DeserializeObject<BoardThreadPost>(resultJson);
 
 		foreach (var reply in post.Replies)
 		{
@@ -144,7 +129,7 @@ public static class CheckHelper
 					Source = "ReplyText",
 					Url = reply.GetReplyUrl(boardConfiguration.Key, threadId)
 				};
-				results.Add(result);
+				ResultsHelper.Add(result);
 			}
 
 			if (reply.HasImage)
@@ -163,12 +148,10 @@ public static class CheckHelper
 						Source = "ReplyFileName",
 						Url = reply.GetReplyUrl(boardConfiguration.Key, reply.Id)
 					};
-					results.Add(result);
+					ResultsHelper.Add(result);
 				}
 			}
 		}
-
-		return results;
 	}
 
 	private static string? CheckStringForKeywords(string str, List<string> keywords)

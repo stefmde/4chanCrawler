@@ -16,7 +16,7 @@ public class Result
 	
 	public DateTime Created { get; set; } = DateTime.Now;
 	
-	public bool Available { get; set; } = true;
+	public bool IsAvailable { get; set; } = true;
 	
 	public long ThreadId { get; set; }
 	
