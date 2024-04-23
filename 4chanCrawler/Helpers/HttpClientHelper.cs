@@ -1,8 +1,8 @@
 namespace _4chanCrawler.Helpers;
 
-public static class HttpClientHelper
+public class HttpClientHelper
 {
-	public static async Task<string?> GetJson(string url)
+	public async Task<string?> GetJson(string url)
 	{
 		var client = new HttpClient();
 		try

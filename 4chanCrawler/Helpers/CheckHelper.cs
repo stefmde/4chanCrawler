@@ -1,3 +1,4 @@
+using System.Web;
 using _4chanCrawler.Models;
 using _4chanCrawler.Models._4ChanApi;
 using _4chanCrawler.Models.Configuration;
@@ -5,24 +6,34 @@ using Newtonsoft.Json;
 
 namespace _4chanCrawler.Helpers;
 
-public static class CheckHelper
+public class CheckHelper
 {
-	private static Guid RunId { get; } = Guid.NewGuid();
-	
-	public static async Task CheckBoards(CrawlerConfiguration configuration)
+	private Guid RunId { get; } = Guid.NewGuid();
+	private readonly CrawlerConfiguration _crawlerConfiguration;
+	private readonly HttpClientHelper _httpClientHelper;
+	private readonly TimeHelper _timeHelper;
+
+	public CheckHelper(CrawlerConfiguration crawlerConfiguration, HttpClientHelper httpClientHelper, TimeHelper timeHelper)
 	{
-		for (var boardIndex = 0; boardIndex < configuration.Boards.Count; boardIndex++)
+		_crawlerConfiguration = crawlerConfiguration ?? throw new ArgumentNullException(nameof(crawlerConfiguration));
+		_httpClientHelper = httpClientHelper ?? throw new ArgumentNullException(nameof(httpClientHelper));
+		_timeHelper = timeHelper ?? throw new ArgumentNullException(nameof(timeHelper));
+	}
+
+	public async Task CheckBoards()
+	{
+		for (var boardIndex = 0; boardIndex < _crawlerConfiguration.Boards.Count; boardIndex++)
 		{
-			Console.Write($"Board {boardIndex + 1} / {configuration.Boards.Count}  ");
-			TimeHelper.CalculateTime(configuration, boardIndex);
-			var boardKey = configuration.Boards[boardIndex].Key;
+			Console.Write($"Board {boardIndex + 1} / {_crawlerConfiguration.Boards.Count}  ");
+			_timeHelper.CalculateTime(_crawlerConfiguration, boardIndex);
+			var boardKey = _crawlerConfiguration.Boards[boardIndex].Key;
 			var board = await GetBoard(boardKey);
 			if (board is null)
 			{
 				continue;
 			}
-			await CheckBoardPages(board, configuration.Boards[boardIndex], configuration.Keywords, configuration.TimeoutBetweenRequestsMilliSeconds);
-			Thread.Sleep(configuration.TimeoutBetweenRequestsMilliSeconds);
+			await CheckBoardPages(board, _crawlerConfiguration.Boards[boardIndex], _crawlerConfiguration.Keywords, _crawlerConfiguration.TimeoutBetweenRequestsMilliSeconds);
+			Thread.Sleep(_crawlerConfiguration.TimeoutBetweenRequestsMilliSeconds);
 			var foundCount = ResultsHelper.Results.Count(x => x.RunId == RunId && x.BoardKey == boardKey);
 			if (foundCount > 0)
 			{
@@ -32,10 +43,10 @@ public static class CheckHelper
 		}
 	}
 
-	private static async Task<Board?> GetBoard(string board)
+	private async Task<Board?> GetBoard(string board)
 	{
 		var url = $"https://a.4cdn.org/{board}/catalog.json";
-		var resultJson = await HttpClientHelper.GetJson(url);
+		var resultJson = await _httpClientHelper.GetJson(url);
 		if (string.IsNullOrWhiteSpace(resultJson))
 		{
 			return null;
@@ -49,7 +60,7 @@ public static class CheckHelper
 		return result;
 	}
 
-	private static async Task CheckBoardPages(Board board, BoardConfiguration boardConfiguration, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
+	private async Task CheckBoardPages(Board board, BoardConfiguration boardConfiguration, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
 	{
 		var pageIndex = 1;
 		foreach (var boardPage in board.Pages)
@@ -60,7 +71,7 @@ public static class CheckHelper
 		}
 	}
 
-	private static async Task CheckThreads(BoardConfiguration boardConfiguration, List<BoardThread> threads, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
+	private async Task CheckThreads(BoardConfiguration boardConfiguration, List<BoardThread> threads, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
 	{
 		var threadIndex = 1;
 		foreach (var thread in threads)
@@ -76,7 +87,7 @@ public static class CheckHelper
 					Keyword = threadTitleFoundKey,
 					ThreadId = thread.Id,
 					Source = "ThreadTitle",
-					Url = thread.GetThreadUrl(boardConfiguration.Key)
+					Url = AppendKeywordHighlightToUrl(_crawlerConfiguration.HighlightTextOnSite, thread.GetThreadUrl(boardConfiguration.Key), threadTitleFoundKey)
 				};
 				ResultsHelper.Add(result);
 			}
@@ -92,7 +103,7 @@ public static class CheckHelper
 					Keyword = threadTextFoundKey,
 					ThreadId = thread.Id,
 					Source = "ThreadText",
-					Url = thread.GetThreadUrl(boardConfiguration.Key)
+					Url = AppendKeywordHighlightToUrl(_crawlerConfiguration.HighlightTextOnSite, thread.GetThreadUrl(boardConfiguration.Key), threadTextFoundKey)
 				};
 				ResultsHelper.Add(result);
 			}
@@ -102,10 +113,10 @@ public static class CheckHelper
 		}
 	}
 
-	private static async Task CheckReplies(BoardConfiguration boardConfiguration, long threadId, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
+	private async Task CheckReplies(BoardConfiguration boardConfiguration, long threadId, List<string> keywords, int timeoutBetweenRequestsMilliSeconds)
 	{
 		Thread.Sleep(timeoutBetweenRequestsMilliSeconds);
-		var resultJson = await HttpClientHelper.GetJson($"https://a.4cdn.org/{boardConfiguration.Key}/thread/{threadId}.json");
+		var resultJson = await _httpClientHelper.GetJson($"https://a.4cdn.org/{boardConfiguration.Key}/thread/{threadId}.json");
 		if (string.IsNullOrWhiteSpace(resultJson))
 		{
 			return;
@@ -127,7 +138,7 @@ public static class CheckHelper
 					ThreadId = threadId,
 					ReplyId = reply.Id,
 					Source = "ReplyText",
-					Url = reply.GetReplyUrl(boardConfiguration.Key, threadId)
+					Url = AppendKeywordHighlightToUrl(_crawlerConfiguration.HighlightTextOnSite, reply.GetReplyUrl(boardConfiguration.Key, threadId), lastReplyTextFoundKey)
 				};
 				ResultsHelper.Add(result);
 			}
@@ -146,7 +157,7 @@ public static class CheckHelper
 						ThreadId = threadId,
 						ReplyId = reply.Id,
 						Source = "ReplyFileName",
-						Url = reply.GetReplyUrl(boardConfiguration.Key, reply.Id)
+						Url = AppendKeywordHighlightToUrl(_crawlerConfiguration.HighlightTextOnSite, reply.GetReplyUrl(boardConfiguration.Key, reply.Id), lastReplyFileNameFoundKey)
 					};
 					ResultsHelper.Add(result);
 				}
@@ -154,7 +165,7 @@ public static class CheckHelper
 		}
 	}
 
-	private static string? CheckStringForKeywords(string str, List<string> keywords)
+	private string? CheckStringForKeywords(string str, List<string> keywords)
 	{
 		if (string.IsNullOrWhiteSpace(str))
 		{
@@ -170,5 +181,17 @@ public static class CheckHelper
 		}
 
 		return null;
+	}
+
+	private string AppendKeywordHighlightToUrl(bool doAppend, string url, string keyword)
+	{
+		if (!doAppend)
+		{
+			return url;
+		}
+		var template = "#:~:text=";
+		var encodedKeyword = HttpUtility.UrlEncode(keyword);
+		var urlWithHighlight = $"{url}{template}{encodedKeyword}";
+		return urlWithHighlight;
 	}
 }

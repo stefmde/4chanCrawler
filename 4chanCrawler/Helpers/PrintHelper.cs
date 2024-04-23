@@ -2,16 +2,16 @@ using _4chanCrawler.Models;
 
 namespace _4chanCrawler.Helpers;
 
-public static class PrintHelper
+public class PrintHelper
 {
-	public static void PrintCompleteResults(List<Result> results, DateTime roundtripStart)
+	public void PrintCompleteResults(List<Result> results, DateTime roundtripStart)
 	{
 		var dateAndTime = $"({DateTime.Now.ToString(Constants.DateTimeFormat)} | HH:MM:SS {DateTime.UtcNow - roundtripStart})";
 
 		PrintResults(results, dateAndTime, true);
 	}
 	
-	public static void PrintResults(List<Result> results, string dateAndTime, bool isNew)
+	public void PrintResults(List<Result> results, string dateAndTime, bool isNew)
 	{
 		if (results is null || !results.Any())
 		{

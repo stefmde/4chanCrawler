@@ -24,7 +24,7 @@ public static class ResultsHelper
 		File.WriteAllText(ResultsFileName, json);
 	}
 
-	public static async Task ReadFromFile()
+	public static async Task ReadFromFile(bool removeUnavailableResults)
 	{
 		if (!File.Exists(ResultsFileName))
 		{
@@ -36,12 +36,17 @@ public static class ResultsHelper
 			return;
 		}
 		Results = JsonConvert.DeserializeObject<List<Result>>(json)!;
+
+		if (removeUnavailableResults)
+		{
+			Results = Results.Where(x => !x.IsAvailable).ToList();
+		}
 		await Check();
 	}
 
 	private static async Task Check()
 	{
-		foreach (var result in Results)
+		foreach (var result in Results.Where(x => x.IsAvailable))
 		{
 			try
 			{
