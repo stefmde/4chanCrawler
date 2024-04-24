@@ -29,8 +29,8 @@ public class App
 		await ResultsHelper.ReadFromFile(_crawlerConfiguration.RemoveUnavailableResults);
 		if (ResultsHelper.Results.Any())
 		{
-			Console.WriteLine($"Previous Results ({ResultsHelper.Results.Count}):");
-			_printHelper.PrintResults(ResultsHelper.Results, DateTime.Now.ToString(Constants.DateTimeFormat), false);
+			Console.WriteLine();
+			_printHelper.PrintResults(ResultsHelper.Results, $"Previous Results ({ResultsHelper.Results.Count}):", DateTime.Now.ToString(Constants.DateTimeFormat));
 		}
 		Console.WriteLine();
 

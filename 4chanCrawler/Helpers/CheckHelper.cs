@@ -87,7 +87,7 @@ public class CheckHelper
 					Keyword = threadTitleFoundKey,
 					ThreadId = thread.Id,
 					Source = "ThreadTitle",
-					Url = AppendKeywordHighlightToUrl(_crawlerConfiguration.HighlightTextOnSite, thread.GetThreadUrl(boardConfiguration.Key), threadTitleFoundKey)
+					Url = thread.GetThreadUrl(boardConfiguration.Key)
 				};
 				ResultsHelper.Add(result);
 			}
@@ -103,7 +103,7 @@ public class CheckHelper
 					Keyword = threadTextFoundKey,
 					ThreadId = thread.Id,
 					Source = "ThreadText",
-					Url = AppendKeywordHighlightToUrl(_crawlerConfiguration.HighlightTextOnSite, thread.GetThreadUrl(boardConfiguration.Key), threadTextFoundKey)
+					Url = thread.GetThreadUrl(boardConfiguration.Key)
 				};
 				ResultsHelper.Add(result);
 			}
@@ -138,7 +138,7 @@ public class CheckHelper
 					ThreadId = threadId,
 					ReplyId = reply.Id,
 					Source = "ReplyText",
-					Url = AppendKeywordHighlightToUrl(_crawlerConfiguration.HighlightTextOnSite, reply.GetReplyUrl(boardConfiguration.Key, threadId), lastReplyTextFoundKey)
+					Url = reply.GetReplyUrl(boardConfiguration.Key, threadId)
 				};
 				ResultsHelper.Add(result);
 			}
@@ -157,7 +157,7 @@ public class CheckHelper
 						ThreadId = threadId,
 						ReplyId = reply.Id,
 						Source = "ReplyFileName",
-						Url = AppendKeywordHighlightToUrl(_crawlerConfiguration.HighlightTextOnSite, reply.GetReplyUrl(boardConfiguration.Key, reply.Id), lastReplyFileNameFoundKey)
+						Url = reply.GetReplyUrl(boardConfiguration.Key, reply.Id)
 					};
 					ResultsHelper.Add(result);
 				}

@@ -10,8 +10,6 @@ public class CrawlerConfiguration
 	
 	public bool RemoveUnavailableResults { get; set; }
 	
-	public bool HighlightTextOnSite { get; set; }
-	
 	public List<string> Keywords { get; set; } = new();
 	
 	public List<BoardConfiguration> Boards { get; set; } = new();
