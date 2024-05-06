@@ -47,8 +47,8 @@ public static class ResultsHelper
 		if (removeUnavailableResults)
 		{
 			Results = Results.Where(x => !x.IsAvailable).ToList();
-			WriteToFile();
 		}
+		WriteToFile();
 	}
 
 	private static async Task Check()
