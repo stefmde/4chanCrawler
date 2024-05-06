@@ -1,19 +1,17 @@
+
 namespace _4chanCrawler.Helpers;
 
 public class HttpClientHelper
 {
+	private readonly HttpClient _client = new ();
+	public int WebRequests { get; private set; }
+	
 	public async Task<string?> GetJson(string url)
 	{
-		var client = new HttpClient();
 		try
 		{
-			var clientResult = await client.GetAsync(url);
-			if (!clientResult.IsSuccessStatusCode)
-			{
-				return null;
-			}
-
-			var resultJson = await clientResult.Content.ReadAsStringAsync();
+			var resultJson = await _client.GetStringAsync(url);
+			WebRequests++;
 			return resultJson;
 		}
 		catch (Exception e)

@@ -10,13 +10,15 @@ public class App
 	private readonly CheckHelper _checkHelper;
 	private readonly PrintHelper _printHelper;
 	private readonly TimeHelper _timeHelper;
+	private readonly HttpClientHelper _httpClientHelper;
 
-	public App(CrawlerConfiguration crawlerConfiguration, CheckHelper checkHelper, PrintHelper printHelper, TimeHelper timeHelper)
+	public App(CrawlerConfiguration crawlerConfiguration, CheckHelper checkHelper, PrintHelper printHelper, TimeHelper timeHelper, HttpClientHelper httpClientHelper)
 	{
 		_crawlerConfiguration = crawlerConfiguration ?? throw new ArgumentNullException(nameof(crawlerConfiguration));
 		_checkHelper = checkHelper ?? throw new ArgumentNullException(nameof(checkHelper));
 		_printHelper = printHelper ?? throw new ArgumentNullException(nameof(printHelper));
 		_timeHelper = timeHelper ?? throw new ArgumentNullException(nameof(timeHelper));
+		_httpClientHelper = httpClientHelper ?? throw new ArgumentNullException(nameof(httpClientHelper));
 	}
 
 	public async Task Run()
@@ -59,6 +61,7 @@ public class App
 				}
 			}
 			_printHelper.PrintCompleteResults(uniqueResults, roundtripStart);
+			Console.WriteLine($"Done {_httpClientHelper.WebRequests} WebRequests.");
 			Console.WriteLine($"Waiting {_crawlerConfiguration.TimeoutBetweenLoopsMinutes} min. for next loop...");
 			Console.WriteLine();
 			Console.WriteLine();

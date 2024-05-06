@@ -35,13 +35,20 @@ public static class ResultsHelper
 		{
 			return;
 		}
+		await Check();
+		
 		Results = JsonConvert.DeserializeObject<List<Result>>(json)!;
 
+		if (Results.Any())
+		{
+			Results = Results.OrderBy(x => x.Keyword.Trim()).ToList();
+		}
+		
 		if (removeUnavailableResults)
 		{
 			Results = Results.Where(x => !x.IsAvailable).ToList();
+			WriteToFile();
 		}
-		await Check();
 	}
 
 	private static async Task Check()

@@ -18,6 +18,8 @@ public class PrintHelper
 		{
 			return;
 		}
+
+		results = results.Where(x => x.IsAvailable).OrderBy(x => x.Keyword.Trim()).ToList();
 		
 		Console.WriteLine($"{label} {dateAndTime}");
 
